@@ -25,6 +25,21 @@ export async function searchEvents(params: {
 
     請提供盡可能多的真實活動（最多 10 個），且必須在該日期區間內舉辦。
     請以繁體中文回答。
+
+    請務必僅以 JSON 格式回傳結果，格式如下：
+    {
+      "summary": "對搜尋結果的簡短總結",
+      "events": [
+        {
+          "title": "活動名稱",
+          "date": "活動日期或期間",
+          "location": "活動地點",
+          "category": "活動類別",
+          "description": "活動簡介",
+          "link": "官方連結或售票連結"
+        }
+      ]
+    }
   `;
 
   const response = await ai.models.generateContent({
@@ -32,37 +47,14 @@ export async function searchEvents(params: {
     contents: prompt,
     config: {
       tools: [{ googleSearch: {} }],
-      responseMimeType: "application/json",
-      responseSchema: {
-        type: Type.OBJECT,
-        properties: {
-          summary: {
-            type: Type.STRING,
-            description: "對搜尋結果的簡短總結",
-          },
-          events: {
-            type: Type.ARRAY,
-            items: {
-              type: Type.OBJECT,
-              properties: {
-                title: { type: Type.STRING, description: "活動名稱" },
-                date: { type: Type.STRING, description: "活動日期或期間" },
-                location: { type: Type.STRING, description: "活動地點" },
-                category: { type: Type.STRING, description: "活動類別" },
-                description: { type: Type.STRING, description: "活動簡介" },
-                link: { type: Type.STRING, description: "官方連結或售票連結" },
-              },
-              required: ["title", "date", "location", "category", "description"],
-            },
-          },
-        },
-        required: ["summary", "events"],
-      },
     },
   });
 
   try {
-    const data = JSON.parse(response.text || "{}");
+    let text = response.text || "{}";
+    // 移除 markdown 代碼塊標籤 (如果有的話)
+    text = text.replace(/```json\n?/, "").replace(/```/, "").trim();
+    const data = JSON.parse(text);
     const sources = response.candidates?.[0]?.groundingMetadata?.groundingChunks || [];
     return {
       events: data.events || [],
