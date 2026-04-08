@@ -43,7 +43,7 @@ export async function searchEvents(params: {
   `;
 
   const response = await ai.models.generateContent({
-    model: "gemini-3.1-flash-lite-preview",
+    model: "gemini-1.5-flash",
     contents: prompt,
     config: {
       tools: [{ googleSearch: {} }],
